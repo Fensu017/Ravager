@@ -1,0 +1,34 @@
+{
+  "714176583358873692": {
+    "user_id": 714176583358873692,
+    "username": "Fensu",
+    "sacred_coins": 150,
+    "daily_rifts_remaining": 0,
+    "last_daily_reset": "2025-12-10",
+    "inventory": {
+      "ankh_isis": 7,
+      "corne_heimdall": 3,
+      "plume_quetzalcoatl": 6,
+      "bouclier_athena": 2,
+      "arc_apollon": 4,
+      "casque_hades": 3,
+      "sandales_hermes": 3,
+      "anneau_draupnir": 2,
+      "joyau_yasakani": 2,
+      "bracelet_freya": 9,
+      "sceptre_anubis": 3,
+      "plume_maat": 5,
+      "ceinture_thor": 2,
+      "caducee_hermes": 1,
+      "trident_poseidon": 3,
+      "corne_abondance": 5,
+      "miroir_yata": 1,
+      "rune_odin": 4,
+      "masque_tengu": 3,
+      "eventail_amaterasu": 3,
+      "gungnir": 1
+    },
+    "total_rifts_opened": 10,
+    "total_cards_collected": 100
+  }
+}
