@@ -1,11 +1,14 @@
 # 🌀 Failles des Légendes - Guide du Collectionneur
 
 ```
-1. /faille          → Ouvrir votre première faille
-2. /inventaire      → Voir vos cartes
-3. /vendre          → Vendre les doublons
-4. /boutique        → Vérifier vos ressources
-5. /profil          → Voir vos stats
+1. /faille          -> Ouvrir votre première faille
+2. /inventaire      -> Voir vos cartes
+3. /vendre          -> Vendre les doublons
+4. /boutique        -> Voir la boutique
+5. /profil          -> Voir vos stats
+6. /carte           -> Voir détails carte
+7. /classement      -> Voir celui qui a ouvert le plus de failles/le plus de pièces/..
+8. /collection      -> Voir toutes les cartes du jeu et celle obtenues ou non
 ```
 
 ---
