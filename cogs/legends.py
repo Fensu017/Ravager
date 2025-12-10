@@ -258,13 +258,29 @@ class LegendsCog(commands.Cog):
         embed = discord.Embed(title=title, description=f"**{len(cards)}** cartes", color=discord.Color.blue())
         
         if rarete:
-            text = "\n".join([f"{'✅' if player.get_card_count(c.id) > 0 else '❌'} **{c.name}** - {c.mythology}" for c in cards])
-            embed.add_field(name="Cartes", value=text or "Aucune", inline=False)
+            # Afficher par pages de 20 cartes max pour éviter la limite de 1024 caractères
+            lines = [f"{'✅' if player.get_card_count(c.id) > 0 else '❌'} **{c.name}** - {c.mythology}" for c in cards]
+            # Diviser en chunks de 20
+            chunk_size = 20
+            for i in range(0, len(lines), chunk_size):
+                chunk = lines[i:i + chunk_size]
+                field_name = "Cartes" if i == 0 else f"Cartes (suite {i // chunk_size + 1})"
+                embed.add_field(name=field_name, value="\n".join(chunk) or "Aucune", inline=False)
         else:
+            # Vue résumée par rareté (juste le compte)
             for r in RARITY_ORDER:
                 r_cards = get_cards_by_rarity(r)
-                text = "\n".join([f"{'✅' if player.get_card_count(c.id) > 0 else '❌'} {c.name}" for c in r_cards])
-                embed.add_field(name=f"{r.emoji} {r.display_name} ({len(r_cards)})", value=text, inline=True)
+                owned = sum(1 for c in r_cards if player.get_card_count(c.id) > 0)
+                embed.add_field(
+                    name=f"{r.emoji} {r.display_name}",
+                    value=f"**{owned}/{len(r_cards)}** obtenues\n💰 {r.sell_value} pièces",
+                    inline=True
+                )
+            embed.add_field(
+                name="💡 Astuce",
+                value="Utilisez `/collection rarete:` pour voir les cartes d'une rareté spécifique !",
+                inline=False
+            )
         
         progress = (player.get_unique_cards() / len(CARDS_DATABASE)) * 100
         embed.set_footer(text=f"Progression: {player.get_unique_cards()}/{len(CARDS_DATABASE)} ({progress:.1f}%)")
