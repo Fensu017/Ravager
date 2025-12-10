@@ -1,6 +1,7 @@
 """
 Cog pour le système de Failles des Légendes et de collection de cartes.
 """
+import os
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -71,14 +72,8 @@ class LegendsCog(commands.Cog):
         player = db.get_player(interaction.user.id, interaction.user.display_name)
         player.check_daily_reset()
         
-        # Déterminer le type de faille
-        if player.daily_rifts_remaining > 0:
-            player.use_free_rift()
-            rift_type = "gratuite"
-        elif player.can_buy_rift(RIFT_COST):
-            player.buy_rift(RIFT_COST)
-            rift_type = "achetée"
-        else:
+        # Vérifier disponibilité avant de defer
+        if player.daily_rifts_remaining <= 0 and not player.can_buy_rift(RIFT_COST):
             embed = discord.Embed(
                 title="❌ Aucune faille disponible",
                 description=(
@@ -92,6 +87,17 @@ class LegendsCog(commands.Cog):
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
+
+        # Defer la réponse pour éviter le timeout
+        await interaction.response.defer()
+        
+        # Déterminer le type de faille
+        if player.daily_rifts_remaining > 0:
+            player.use_free_rift()
+            rift_type = "gratuite"
+        else:
+            player.buy_rift(RIFT_COST)
+            rift_type = "achetée"
 
         # Tirer et ajouter les cartes
         cards = draw_cards(CARDS_PER_RIFT)
@@ -110,10 +116,20 @@ class LegendsCog(commands.Cog):
             color=discord.Color.purple()
         )
         
+        # Ajouter l'image de la faille
+        rift_image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "rift.png")
+        file = None
+        if os.path.exists(rift_image_path):
+            file = discord.File(rift_image_path, filename="rift.png")
+            embed.set_image(url="attachment://rift.png")
+        
         rarity_counts = count_cards_by_rarity(cards)
         embed.add_field(name="📊 Résumé des raretés", value=format_rarity_summary(rarity_counts), inline=False)
 
-        await interaction.response.send_message(embed=embed, view=RiftResultView(cards, interaction.user.id))
+        if file:
+            await interaction.followup.send(embed=embed, file=file, view=RiftResultView(cards, interaction.user.id))
+        else:
+            await interaction.followup.send(embed=embed, view=RiftResultView(cards, interaction.user.id))
 
     @app_commands.command(name="inventaire", description="📦 Voir votre inventaire de cartes")
     async def inventory(self, interaction: discord.Interaction, page: int = 1):
@@ -160,21 +176,21 @@ class LegendsCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="vendre", description="💰 Vendre une carte de votre collection")
-    @app_commands.describe(carte="Le nom de la carte à vendre", quantite="Nombre à vendre (défaut: 1)")
-    @app_commands.autocomplete(carte=inventory_card_autocomplete)
-    async def sell_card(self, interaction: discord.Interaction, carte: str, quantite: int = 1):
+    @app_commands.describe(card="Le nom de la carte à vendre", quantity="Nombre à vendre (défaut: 1)")
+    @app_commands.autocomplete(card=inventory_card_autocomplete)
+    async def sell_card(self, interaction: discord.Interaction, card: str, quantity: int = 1):
         """Vend une ou plusieurs cartes."""
         player = db.get_player(interaction.user.id, interaction.user.display_name)
         
         # Rechercher la carte
         inv_cards = [get_card_by_id(cid) for cid in player.inventory.keys()]
-        found_card = find_card_by_name_or_id(carte, [c for c in inv_cards if c])
+        found_card = find_card_by_name_or_id(card, [c for c in inv_cards if c])
         
         if not found_card:
             available = [f"`{get_card_by_id(cid).name}`" for cid in list(player.inventory.keys())[:5] if get_card_by_id(cid)]
             embed = discord.Embed(
                 title="❌ Carte non trouvée",
-                description=f"**{carte}** n'est pas dans votre inventaire.\n\n**Disponibles:**\n" + ("\n".join(available) or "Aucune"),
+                description=f"**{card}** n'est pas dans votre inventaire.\n\n**Disponibles:**\n" + ("\n".join(available) or "Aucune"),
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -187,23 +203,23 @@ class LegendsCog(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
-        quantite = max(1, min(quantite, owned))
-        remaining = owned - quantite
+        quantity = max(1, min(quantity, owned))
+        remaining = owned - quantity
         
         # Confirmation
-        total = found_card.value * quantite
+        total = found_card.value * quantity
         embed = discord.Embed(
             title="💰 Confirmer la vente",
             description=(
                 f"**Carte:** {found_card.rarity.emoji} {found_card.name}\n"
-                f"**Quantité à vendre:** {quantite}\n"
+                f"**Quantité à vendre:** {quantity}\n"
                 f"**Restant après vente:** {remaining}\n"
                 f"**Total:** {total} pièces"
             ),
             color=discord.Color.orange()
         )
         embed.set_thumbnail(url=found_card.image_url)
-        await interaction.response.send_message(embed=embed, view=SellConfirmView(interaction.user.id, found_card, quantite, total))
+        await interaction.response.send_message(embed=embed, view=SellConfirmView(interaction.user.id, found_card, quantity, total))
 
     @app_commands.command(name="boutique", description="🏪 Voir la boutique des failles")
     async def shop(self, interaction: discord.Interaction):
@@ -218,18 +234,18 @@ class LegendsCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="carte", description="🃏 Voir les détails d'une carte")
-    @app_commands.describe(nom="Le nom de la carte")
-    @app_commands.autocomplete(nom=all_cards_autocomplete)
-    async def card_info(self, interaction: discord.Interaction, nom: str):
+    @app_commands.describe(name="Le nom de la carte")
+    @app_commands.autocomplete(name=all_cards_autocomplete)
+    async def card_info(self, interaction: discord.Interaction, name: str):
         """Affiche les informations d'une carte."""
-        found_card = find_card_by_name_or_id(nom)
+        found_card = find_card_by_name_or_id(name)
         
         if not found_card:
-            matches = [c for c in CARDS_DATABASE if nom.lower() in c.name.lower()][:5]
+            matches = [c for c in CARDS_DATABASE if name.lower() in c.name.lower()][:5]
             if matches:
                 embed = discord.Embed(title="❓ Carte non trouvée", description=f"Vouliez-vous dire :\n" + "\n".join([f"• `{c.name}`" for c in matches]), color=discord.Color.orange())
             else:
-                embed = discord.Embed(title="❌ Carte non trouvée", description=f"**{nom}** n'existe pas.", color=discord.Color.red())
+                embed = discord.Embed(title="❌ Carte non trouvée", description=f"**{name}** n'existe pas.", color=discord.Color.red())
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
         
@@ -237,28 +253,28 @@ class LegendsCog(commands.Cog):
         await interaction.response.send_message(embed=create_card_embed(found_card, show_image=True, owned=player.get_card_count(found_card.id)))
 
     @app_commands.command(name="collection", description="📚 Voir toutes les cartes du jeu")
-    @app_commands.describe(rarete="Filtrer par rareté")
-    @app_commands.choices(rarete=[
+    @app_commands.describe(rarity="Filtrer par rareté")
+    @app_commands.choices(rarity=[
         app_commands.Choice(name="⚪ Mortel", value="MORTEL"),
         app_commands.Choice(name="🟢 Ascendant", value="ASCENDANT"),
         app_commands.Choice(name="🟣 Élite", value="ELITE"),
         app_commands.Choice(name="🟡 Transcendateur", value="TRANSCENDATEUR"),
     ])
-    async def collection(self, interaction: discord.Interaction, rarete: Optional[str] = None):
+    async def collection(self, interaction: discord.Interaction, rarity: Optional[str] = None):
         """Affiche toutes les cartes disponibles."""
         player = db.get_player(interaction.user.id, interaction.user.display_name)
         
-        if rarete:
-            rarity = Rarity[rarete]
-            cards = get_cards_by_rarity(rarity)
-            title = f"📚 Collection - {rarity.emoji} {rarity.display_name}"
+        if rarity:
+            rarity_enum = Rarity[rarity]
+            cards = get_cards_by_rarity(rarity_enum)
+            title = f"📚 Collection - {rarity_enum.emoji} {rarity_enum.display_name}"
         else:
             cards = CARDS_DATABASE
             title = "📚 Collection complète"
         
         embed = discord.Embed(title=title, description=f"**{len(cards)}** cartes", color=discord.Color.blue())
         
-        if rarete:
+        if rarity:
             # Afficher par pages de 20 cartes max pour éviter la limite de 1024 caractères
             lines = [f"{'✅' if player.get_card_count(c.id) > 0 else '❌'} **{c.name}** - {c.mythology}" for c in cards]
             # Diviser en chunks de 20
@@ -288,10 +304,10 @@ class LegendsCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="profil", description="👤 Voir votre profil de collectionneur")
-    @app_commands.describe(membre="Le membre à consulter")
-    async def profile(self, interaction: discord.Interaction, membre: Optional[discord.Member] = None):
+    @app_commands.describe(member="Le membre à consulter")
+    async def profile(self, interaction: discord.Interaction, member: Optional[discord.Member] = None):
         """Affiche le profil d'un joueur."""
-        target = membre or interaction.user
+        target = member or interaction.user
         player = db.get_player(target.id, target.display_name)
         player.check_daily_reset()
         
@@ -309,18 +325,18 @@ class LegendsCog(commands.Cog):
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="classement", description="🏆 Voir le classement des collectionneurs")
-    @app_commands.describe(type="Type de classement")
-    @app_commands.choices(type=[
+    @app_commands.describe(sort_type="Type de classement")
+    @app_commands.choices(sort_type=[
         app_commands.Choice(name="💰 Pièces sacrées", value="coins"),
         app_commands.Choice(name="🃏 Nombre de cartes", value="cards"),
         app_commands.Choice(name="🌀 Failles ouvertes", value="rifts"),
     ])
-    async def leaderboard(self, interaction: discord.Interaction, type: str = "coins"):
+    async def leaderboard(self, interaction: discord.Interaction, sort_type: str = "coins"):
         """Affiche le classement des joueurs."""
-        players = db.get_leaderboard(limit=10, sort_by=type)
+        players = db.get_leaderboard(limit=10, sort_by=sort_type)
         titles = {"coins": "💰 Les plus riches", "cards": "🃏 Meilleurs collectionneurs", "rifts": "🌀 Explorateurs de failles"}
         
-        embed = discord.Embed(title=titles.get(type, "🏆 Classement"), color=discord.Color.gold())
+        embed = discord.Embed(title=titles.get(sort_type, "🏆 Classement"), color=discord.Color.gold())
         
         if not players:
             embed.description = "Aucun joueur n'a encore joué !"
@@ -329,7 +345,7 @@ class LegendsCog(commands.Cog):
             lines = []
             for i, p in enumerate(players):
                 medal = medals[i] if i < 3 else f"**{i+1}.**"
-                val = f"{p.sacred_coins} 💰" if type == "coins" else (f"{p.get_total_cards()} cartes" if type == "cards" else f"{p.total_rifts_opened} failles")
+                val = f"{p.sacred_coins} 💰" if sort_type == "coins" else (f"{p.get_total_cards()} cartes" if sort_type == "cards" else f"{p.total_rifts_opened} failles")
                 lines.append(f"{medal} **{p.username}** - {val}")
             embed.description = "\n".join(lines)
         

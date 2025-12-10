@@ -130,7 +130,11 @@ class SellConfirmView(discord.ui.View):
             )
         
         self._disable_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        try:
+            await interaction.response.edit_message(embed=embed, view=self)
+        except discord.errors.NotFound:
+            # L'interaction a expiré, envoyer un nouveau message
+            await interaction.channel.send(embed=embed)
 
     @discord.ui.button(label="❌ Annuler", style=discord.ButtonStyle.danger)
     async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -143,4 +147,7 @@ class SellConfirmView(discord.ui.View):
             color=discord.Color.red()
         )
         self._disable_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        try:
+            await interaction.response.edit_message(embed=embed, view=self)
+        except discord.errors.NotFound:
+            pass  # L'interaction a expiré, pas besoin de notifier
