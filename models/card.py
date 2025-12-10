@@ -56,18 +56,21 @@ def get_cards_by_rarity(rarity: Rarity) -> List["Card"]:
 def draw_random_card() -> "Card":
     """
     Tire une carte aléatoire en respectant les probabilités de rareté.
-    - Ascendant: 75%
-    - Élite: 20%
+    - Mortel: 50%
+    - Ascendant: 30%
+    - Élite: 15%
     - Transcendateur: 5%
     """
     roll = random.randint(1, 100)
     
     if roll <= 5:  # 1-5 = 5%
         rarity = Rarity.TRANSCENDATEUR
-    elif roll <= 25:  # 6-25 = 20%
+    elif roll <= 20:  # 6-20 = 15%
         rarity = Rarity.ELITE
-    else:  # 26-100 = 75%
+    elif roll <= 50:  # 21-50 = 30%
         rarity = Rarity.ASCENDANT
+    else:  # 51-100 = 50%
+        rarity = Rarity.MORTEL
     
     cards_of_rarity = get_cards_by_rarity(rarity)
     return random.choice(cards_of_rarity)

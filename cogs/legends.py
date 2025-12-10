@@ -214,7 +214,7 @@ class LegendsCog(commands.Cog):
         embed = discord.Embed(title="🏪 Boutique des Failles", description="Achetez des Failles des Légendes !", color=discord.Color.gold())
         embed.add_field(name="🌀 Faille des Légendes", value=f"**Prix:** {RIFT_COST} pièces\n**Contenu:** {CARDS_PER_RIFT} cartes", inline=False)
         embed.add_field(name="📊 Vos ressources", value=f"💰 {player.sacred_coins} pièces\n🌀 {player.daily_rifts_remaining}/{DAILY_FREE_RIFTS} gratuites\n🛒 {player.sacred_coins // RIFT_COST} achetables", inline=False)
-        embed.add_field(name="📈 Taux de drop", value="🟢 Ascendant: 75% (10💰)\n🟣 Élite: 20% (300💰)\n🟡 Transcendateur: 5% (2000💰)", inline=False)
+        embed.add_field(name="📈 Taux de drop", value="⚪ Mortel: 50% (5💰)\n🟢 Ascendant: 30% (25💰)\n🟣 Élite: 15% (150💰)\n🟡 Transcendateur: 5% (1000💰)", inline=False)
         await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name="carte", description="🃏 Voir les détails d'une carte")
@@ -239,6 +239,7 @@ class LegendsCog(commands.Cog):
     @app_commands.command(name="collection", description="📚 Voir toutes les cartes du jeu")
     @app_commands.describe(rarete="Filtrer par rareté")
     @app_commands.choices(rarete=[
+        app_commands.Choice(name="⚪ Mortel", value="MORTEL"),
         app_commands.Choice(name="🟢 Ascendant", value="ASCENDANT"),
         app_commands.Choice(name="🟣 Élite", value="ELITE"),
         app_commands.Choice(name="🟡 Transcendateur", value="TRANSCENDATEUR"),

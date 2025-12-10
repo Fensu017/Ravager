@@ -6,9 +6,10 @@ from enum import Enum
 
 class Rarity(Enum):
     """Énumération des raretés de cartes."""
-    ASCENDANT = ("Ascendant", 75, 10, "🟢")  # (nom, % apparition, valeur, emoji)
-    ELITE = ("Élite", 20, 300, "🟣")
-    TRANSCENDATEUR = ("Transcendateur", 5, 2000, "🟡")
+    MORTEL = ("Mortel", 50, 5, "⚪")  # (nom, % apparition, valeur, emoji)
+    ASCENDANT = ("Ascendant", 30, 25, "🟢")
+    ELITE = ("Élite", 15, 150, "🟣")
+    TRANSCENDATEUR = ("Transcendateur", 5, 1000, "🟡")
 
     @property
     def display_name(self) -> str:

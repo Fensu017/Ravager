@@ -15,10 +15,11 @@ RIFT_COST = 200  # Coût d'une faille en pièces sacrées
 DAILY_FREE_RIFTS = 5  # Nombre de failles gratuites par jour
 
 # Ordre d'affichage des raretés (du plus rare au moins rare)
-RARITY_ORDER = [Rarity.TRANSCENDATEUR, Rarity.ELITE, Rarity.ASCENDANT]
+RARITY_ORDER = [Rarity.TRANSCENDATEUR, Rarity.ELITE, Rarity.ASCENDANT, Rarity.MORTEL]
 
 # Couleurs d'embed selon la rareté
 RARITY_COLORS = {
+    Rarity.MORTEL: discord.Color.light_grey(),
     Rarity.ASCENDANT: discord.Color.green(),
     Rarity.ELITE: discord.Color.purple(),
     Rarity.TRANSCENDATEUR: discord.Color.gold()
