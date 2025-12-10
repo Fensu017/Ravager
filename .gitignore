@@ -1,1 +1,35 @@
+# Fichiers de configuration sensibles
 .env
+
+# Environnement virtuel
+myenv/
+venv/
+.venv/
+env/
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Données de sauvegarde (optionnel - décommenter si vous voulez les ignorer)
+# data/players.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Fichiers temporaires
+*.tmp
+*.temp
